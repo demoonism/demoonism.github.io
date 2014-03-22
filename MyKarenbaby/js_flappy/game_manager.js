@@ -1,36 +1,42 @@
 function GameManager(size, InputManager, Actuator, ScoreManager) {
-  this.size         = size; // Size of the grid
   this.inputManager = new InputManager;
   this.scoreManager = new ScoreManager;
   this.actuator     = new Actuator;
 
-  this.startTiles   = 2;
-
-  this.inputManager.on("move", this.move.bind(this));
-  this.inputManager.on("restart", this.restart.bind(this));
+  //this.inputManager.on("jump", this.jump.bind(this));
 
   this.setup();
+
+  this.timer();
 }
 
 // Restart the game
 GameManager.prototype.restart = function () {
-  this.actuator.restart();
+  this.actuator.continue();
   this.setup();
+};
+
+// Keep playing after winning
+GameManager.prototype.keepPlaying = function () {
+  this.keepPlaying = true;
+  this.actuator.continue();
+};
+
+GameManager.prototype.isGameTerminated = function () {
+  if (this.over || (this.won && !this.keepPlaying)) {
+    return true;
+  } else {
+    return false;
+  }
 };
 
 // Set up the game
 GameManager.prototype.setup = function () {
-  this.grid         = new Grid(this.size);
-
-  this.score        = 0;
-  this.over         = false;
-  this.won          = false;
-
-  // Add the initial tiles
-  this.addStartTiles();
-
-  // Update the actuator
-  this.actuate();
+  this.score = 0;
+  this.birdpos = 0.5;
+  this.birdspd = 0;
+  this.ab = 1;
+  this.cd = 1;
 };
 
 // Set up the initial tiles to start the game with
@@ -57,10 +63,11 @@ GameManager.prototype.actuate = function () {
   }
 
   this.actuator.actuate(this.grid, {
-    score:     this.score,
-    over:      this.over,
-    won:       this.won,
-    bestScore: this.scoreManager.get()
+    score:      this.score,
+    bestScore:  this.scoreManager.get(),
+    birdpos:    this.birdpos,
+    ab:         this.ab,
+    cd:         this.cd
   });
 
 };
@@ -87,7 +94,7 @@ GameManager.prototype.move = function (direction) {
   // 0: up, 1: right, 2:down, 3: left
   var self = this;
 
-  if (this.over || this.won) return; // Don't do anything if the game's over
+  if (this.isGameTerminated()) return; // Don't do anything if the game's over
 
   var cell, tile;
 
@@ -123,7 +130,7 @@ GameManager.prototype.move = function (direction) {
           self.score += merged.value;
 
           // The mighty 2048 tile
-          if (merged.value === 4096) self.won = true;
+          if (merged.value === 2048) self.won = true;
         } else {
           self.moveTile(tile, positions.farthest);
         }
@@ -226,3 +233,43 @@ GameManager.prototype.tileMatchesAvailable = function () {
 GameManager.prototype.positionsEqual = function (first, second) {
   return first.x === second.x && first.y === second.y;
 };
+
+GameManager.prototype.timer = function () {
+  var self = this;
+
+  // move
+  this.birdpos += this.birdspd;
+  this.birdspd += 0.00015 / (this.birdspd + 0.1);
+
+  if (this.birdpos > 1 && this.birdspd > 0) this.birdspd = -this.birdspd;
+  if (this.birdpos < -0.25 && this.birdspd < 0) this.birdspd = -this.birdspd;
+
+  this.score += 1 / 64;
+
+  // check
+
+  var steppos = this.score - Math.floor(this.score);
+
+  if (steppos > 5 / 12 && steppos < 11 / 12) {
+    var range = {0: [-0.15, 0.3], 1: [0.2, 0.55], 2: [0.45, 0.9]};
+    if (this.birdpos < range[this.ab][0] || this.birdpos > range[this.ab][1]) {
+      this.score = steppos; // cut down the integer part
+    }
+  }
+
+  if (steppos == 0) {
+    this.ab = this.cd;
+    this.cd = Math.floor(Math.random() * 3);
+  }
+
+  setTimeout(function () {self.timer();}, 384 / Math.sqrt(this.score + 256));
+  this.actuate();
+}
+
+GameManager.prototype.jump = function () {
+  if (this.birdspd < 0) {
+    this.birdspd = -0.03;
+  } else {
+    this.birdspd = -0.025;
+  }
+}

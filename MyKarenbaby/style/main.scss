@@ -7,8 +7,6 @@ $grid-row-cells: 4;
 $tile-size: ($field-width - $grid-spacing * ($grid-row-cells + 1)) / $grid-row-cells;
 $tile-border-radius: 3px;
 
-$mobile-threshold: $field-width + 20px;
-
 $text-color: #776E65;
 $bright-text-color: #f9f6f2;
 
@@ -184,7 +182,6 @@ hr {
     border-radius: $tile-border-radius * 2;
     width: $field-width;
     height: $field-width;
-    -ms-touch-action: none;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
@@ -221,10 +218,6 @@ hr {
         @include button;
         margin-left: 9px;
         // margin-top: 59px;
-
-	&.keep-playing-button {
-	  display: none;
-	}
       }
 
       @include animation(fade-in 800ms ease $transition-speed * 12);
@@ -233,10 +226,6 @@ hr {
       &.game-won {
         background: rgba($tile-gold-color, .5);
         color: $bright-text-color;
-
-	a.keep-playing-button {
-	  display: inline-block;
-	}
       }
 
       &.game-won, &.game-over {
@@ -382,31 +371,19 @@ hr {
         font-size: 45px;
 
         // Media queries placed here to avoid carrying over the rest of the logic
-        @include smaller($mobile-threshold) {
+        @include smaller(480px) {
           font-size: 25px;
         }
       } @else if $power >= 1000 {
         font-size: 35px;
 
-        @include smaller($mobile-threshold) {
+        @include smaller(480px) {
           font-size: 15px;
         }
       }
     }
 
     $exponent: $exponent + 1;
-  }
-
-  // Super tiles (above 2048)
-  &.tile-super .tile-inner {
-    color: $bright-text-color;
-    background: mix(#333, $tile-gold-color, 95%);
-
-    font-size: 30px;
-
-    @include smaller($mobile-threshold) {
-      font-size: 10px;
-    }
   }
 }
 
@@ -455,7 +432,7 @@ hr {
   margin-top: 50px;
 }
 
-@include smaller($mobile-threshold) {
+@include smaller(480px) {
   // Redefine variables for smaller screens
   $field-width: 280px;
   $grid-spacing: 10px;
